@@ -1,0 +1,12 @@
+{
+  "mode": "render",
+  "datapacks": [],
+  "dimension": "minecraft:overworld",
+  "seed": "Seed Tester",
+
+  "size": 8000,
+  "blocksPerPixel": 8,
+  "structures": ["village", "pillager_outpost", "ancient_city"],
+
+  "outputFolder": "../output"
+}

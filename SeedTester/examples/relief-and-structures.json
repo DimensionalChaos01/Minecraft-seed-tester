@@ -1,0 +1,17 @@
+{
+  "mode": "render",
+  "datapacks": ["../datapacks/delta_v1.zip"],
+  "dimension": "delta:delta_primary",
+  "seed": 0,
+
+  "centerX": 0,
+  "centerZ": 1000,
+  "size": 6000,
+  "blocksPerPixel": 8,
+
+  "relief": { "enabled": true, "detail": 2 },
+  "structures": ["trail_ruins", "pillager_outpost", "village", "monument", "swamp_hut"],
+
+  "outputFolder": "../output",
+  "outputName": "example_relief_structures"
+}

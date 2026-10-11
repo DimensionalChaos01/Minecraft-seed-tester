@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seed Tester</title>
+<style>
+  :root {
+    --bg: #14171c; --panel: #1c2027; --panel2: #252a33; --line: #343b47; --text: #e6e9ee;
+    --dim: #98a2b3; --accent: #4da3ff; --accent-text: #06121f; --danger: #ff7b72; --ok: #6ad08a;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.4 "Segoe UI", system-ui, sans-serif; display: flex; overflow: hidden; }
+  #side { width: 320px; flex: none; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  #side header { padding: 12px 14px 8px; border-bottom: 1px solid var(--line); }
+  #side header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  #side header p { margin: 2px 0 0; color: var(--dim); font-size: 12px; }
+  #scroll { overflow-y: auto; flex: 1; padding: 4px 14px 16px; }
+  section { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  section:last-child { border-bottom: 0; }
+  h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 0 0 8px; font-weight: 600; }
+  label { color: var(--dim); font-size: 12px; }
+  input[type=text], input[type=number], select {
+    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 5px;
+    padding: 6px 8px; font: inherit; min-width: 0;
+  }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 5px;
+    padding: 6px 10px; font: inherit; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { border-color: var(--dim); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row + .row, .row + .note, .note + .row { margin-top: 6px; }
+  .grow { flex: 1; min-width: 0; }
+  .note { color: var(--dim); font-size: 12px; margin: 6px 0 0; overflow-wrap: anywhere; }
+  .note.error { color: var(--danger); }
+  .note.ok { color: var(--ok); }
+  #packs { list-style: none; margin: 0 0 6px; padding: 0; }
+  #packs li { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+  #packs li span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #packs li.off span { color: var(--dim); }
+  #packs button { padding: 0 6px; line-height: 20px; font-size: 11px; }
+  .check { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 14px; padding: 2px 0; cursor: pointer; }
+  #structPanel { width: 290px; flex: none; background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  #structPanel header { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 14px; border-bottom: 1px solid var(--line); }
+  #structPanel header h1 { font-size: 15px; margin: 0; font-weight: 600; flex: 1; }
+  #structToggle { width: 30px; height: 30px; padding: 0; flex: none; }
+  #structBody { overflow-y: auto; flex: 1; padding: 4px 14px 16px; }
+  #structPanel.collapsed { width: 44px; }
+  #structPanel.collapsed header { flex-direction: column; padding: 10px 6px; border-bottom: 0; }
+  #structPanel.collapsed header h1 { writing-mode: vertical-rl; flex: none; font-size: 13px; color: var(--dim); order: 2; cursor: pointer; }
+  #structPanel.collapsed #structBody { display: none; }
+  #structLegend label { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; color: var(--text); font-size: 14px; cursor: pointer; }
+  #structLegend li.off span { color: var(--dim); }
+  #structNear { list-style: none; margin: 0; padding: 0; }
+  #structNear li { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 4px; cursor: pointer; }
+  #structNear li:hover { background: var(--panel2); }
+  #structNear i { width: 12px; height: 12px; flex: none; border: 1px solid #0008; }
+  #structNear span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #structNear b { font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #legend, #structLegend { list-style: none; margin: 0; padding: 0; }
+  #legend li, #structLegend li { display: flex; align-items: center; gap: 8px; padding: 2px 4px; border-radius: 4px; }
+  #legend li { cursor: pointer; }
+  #legend li:hover { background: var(--panel2); }
+  #legend li.on { background: var(--panel2); outline: 1px solid var(--accent); }
+  #legend i, #structLegend i { width: 14px; height: 14px; flex: none; border: 1px solid #0008; border-radius: 2px; }
+  #legend span, #structLegend span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #legend b, #structLegend b { font-weight: 400; color: var(--dim); font-variant-numeric: tabular-nums; }
+  #main { flex: 1; position: relative; min-width: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
+  #status {
+    position: absolute; left: 10px; bottom: 10px; background: #14171ce6; border: 1px solid var(--line); border-radius: 6px;
+    padding: 6px 10px; font-variant-numeric: tabular-nums; pointer-events: none; max-width: calc(100% - 80px);
+  }
+  #status b { font-weight: 600; }
+  #status .sep { color: var(--line); margin: 0 6px; }
+  #tools { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  #tools button { width: 36px; height: 36px; padding: 0; font-size: 18px; background: #1c2027e6; }
+  #busy { position: absolute; right: 10px; bottom: 10px; background: #14171ce6; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; color: var(--dim); display: none; }
+  #toast { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: #3a1d1d; border: 1px solid var(--danger); color: #ffd7d3; padding: 8px 14px; border-radius: 6px; display: none; max-width: 80%; }
+  #drop { position: absolute; inset: 0; background: #4da3ff33; border: 3px dashed var(--accent); display: none; align-items: center; justify-content: center; font-size: 22px; pointer-events: none; }
+  #toggle { display: none; }
+  @media (max-width: 760px) {
+    #side { position: absolute; z-index: 5; height: 100%; width: min(320px, 88vw); transform: translateX(-100%); transition: transform .15s; }
+    #side.open { transform: none; }
+    #toggle { display: block; position: absolute; left: 10px; top: 10px; z-index: 6; }
+    #structPanel { position: absolute; right: 0; z-index: 5; height: 100%; max-width: 88vw; }
+    #structPanel.collapsed { height: auto; border-bottom: 1px solid var(--line); border-radius: 0 0 0 6px; }
+    #tools { right: 54px; }
+  }
+</style>
+</head>
+<body>
+<aside id="side">
+  <header>
+    <h1>Seed Tester</h1>
+    <p id="worldLine">Loading…</p>
+  </header>
+  <div id="scroll">
+    <section>
+      <h2>World</h2>
+      <div class="row">
+        <button class="primary grow" type="button" id="openWorld">Load world…</button>
+        <button type="button" id="closeWorld" hidden>Close</button>
+      </div>
+      <p class="note" id="openNote">Pick a Minecraft world folder to use its seed, datapacks and dimensions.</p>
+    </section>
+
+    <section>
+      <h2>Seed</h2>
+      <form class="row" id="seedForm">
+        <input type="text" id="seedInput" class="grow" placeholder="Number or text" autocomplete="off" spellcheck="false" aria-label="World seed">
+        <button class="primary" type="submit">Load</button>
+        <button type="button" id="randomSeed" title="Random seed">Random</button>
+      </form>
+      <p class="note" id="seedNote"></p>
+    </section>
+
+    <section>
+      <h2>Datapacks</h2>
+      <ul id="packs"></ul>
+      <div class="row" id="addRow">
+        <button type="button" id="addPack">Add datapack…</button>
+        <input type="file" id="packFile" accept=".zip,.jar" multiple hidden>
+      </div>
+      <p class="note" id="packHint"></p>
+      <div class="row" style="margin-top:10px">
+        <label for="dimension" style="flex:none">Dimension</label>
+        <select id="dimension" class="grow"></select>
+      </div>
+      <div class="row">
+        <button class="primary grow" type="button" id="loadDimension">Load selected dimension</button>
+      </div>
+      <p class="note" id="worldNote"></p>
+    </section>
+
+    <section>
+      <h2>Go to</h2>
+      <form class="row" id="gotoForm">
+        <input type="number" id="gotoX" class="grow" placeholder="X" aria-label="X coordinate">
+        <input type="number" id="gotoZ" class="grow" placeholder="Z" aria-label="Z coordinate">
+        <button type="submit">Go</button>
+      </form>
+      <div class="row">
+        <select id="findBiome" class="grow" aria-label="Biome to find"></select>
+        <button type="button" id="findBtn" title="Nearest to the middle of the map, same search as /locate biome">Find</button>
+      </div>
+      <p class="note" id="findNote"></p>
+      <p class="note" id="pinNote">Click the map to drop a pin.</p>
+    </section>
+
+    <section>
+      <h2>Show</h2>
+      <label class="check"><input type="checkbox" id="showGrid" checked> Coordinate grid</label>
+      <p class="note">Structures have their own panel on the right.</p>
+    </section>
+
+    <section>
+      <h2>Biomes in view</h2>
+      <p class="note" id="summary" style="margin:0 0 6px"></p>
+      <ul id="legend"></ul>
+      <p class="note">Click a biome to highlight it.</p>
+    </section>
+  </div>
+</aside>
+
+<main id="main">
+  <canvas id="map" aria-label="Biome map. Drag to move, scroll to zoom."></canvas>
+  <button id="toggle" type="button">Menu</button>
+  <div id="tools">
+    <button type="button" id="zoomIn" title="Zoom in (+)">+</button>
+    <button type="button" id="zoomOut" title="Zoom out (-)">−</button>
+    <button type="button" id="home" title="Back to 0,0">⌂</button>
+    <button type="button" id="save" title="Save this view as a PNG">⤓</button>
+  </div>
+  <div id="status"></div>
+  <div id="busy"></div>
+  <div id="toast" role="alert"></div>
+  <div id="drop">Drop datapack .zip files to add them</div>
+</main>
+
+<aside id="structPanel" aria-label="Structures">
+  <header>
+    <h1 id="structTitle">Structures</h1>
+    <button type="button" id="structToggle" aria-controls="structBody" aria-expanded="true" title="Hide this panel">»</button>
+  </header>
+  <div id="structBody">
+    <section>
+      <label class="check"><input type="checkbox" id="showStructures"> Show structures on the map</label>
+      <p class="note" id="structNote">These are candidates: placement and biome are checked like the game does, but the game can still reject a few.</p>
+    </section>
+    <section id="structTypesSection" hidden>
+      <h2>Types in view</h2>
+      <div class="row" style="margin-bottom:6px">
+        <button type="button" id="structAll">All</button>
+        <button type="button" id="structNone">None</button>
+      </div>
+      <ul id="structLegend"></ul>
+    </section>
+    <section id="structNearSection" hidden>
+      <h2>Nearest to the middle of the map</h2>
+      <ul id="structNear"></ul>
+      <p class="note">Click one to go there.</p>
+    </section>
+  </div>
+</aside>
+
+<script>
+'use strict'
+const $ = id => document.getElementById(id)
+const canvas = $('map')
+const ctx = canvas.getContext('2d')
+
+const TILE = 256
+const LOW = 64
+const MIN_BPP = 4      // biomes are 4 blocks wide; finer tiles would show nothing new
+const MAX_BPP = 512
+const MAX_SCALE = 8    // screen pixels per block when fully zoomed in
+const MIN_SCALE = 1 / MAX_BPP
+const STRUCT_COLORS = ['#ffffff', '#ffeb3b', '#ff40ff', '#00e5ff', '#ff9100', '#76ff03', '#ff5252', '#b388ff', '#ffab91', '#1de9b6', '#f06292', '#9e9e9e']
+
+let app = null              // server state
+let seed = '0'
+let view = { x: 0, z: 0, scale: 1 / 8 }   // centre in blocks, screen pixels per block
+let highlight = -1
+let pin = null
+let mouse = null
+let tiles = new Map()       // "bpp|tx|tz" -> tile
+let structures = { key: '', list: [], ids: [] }
+let dirty = true
+let width = 0, height = 0
+
+// ---- helpers -----------------------------------------------------------------------------
+async function api(path, options = {}) {
+  const res = await fetch(path, { ...options, headers: { 'X-Seed-Tester': '1', ...(options.headers || {}) } })
+  if (!res.ok) {
+    let message = res.statusText
+    try { message = (await res.json()).error || message } catch {}
+    const error = new Error(message)
+    error.status = res.status
+    throw error
+  }
+  return res
+}
+let toastTimer = 0
+function toast(message) {
+  $('toast').textContent = message
+  $('toast').style.display = 'block'
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { $('toast').style.display = 'none' }, 6000)
+}
+const fmt = n => Math.round(n).toLocaleString('en-US')
+const invalidate = () => { dirty = true }
+const bppForScale = scale => Math.min(MAX_BPP, Math.max(MIN_BPP, 2 ** Math.ceil(Math.log2(1 / scale) - 1e-9)))
+const toScreenX = x => (x - view.x) * view.scale + width / 2
+const toScreenZ = z => (z - view.z) * view.scale + height / 2
+const toBlockX = sx => (sx - width / 2) / view.scale + view.x
+const toBlockZ = sy => (sy - height / 2) / view.scale + view.z
+
+// ---- tiles -------------------------------------------------------------------------------
+const MAX_ACTIVE = 6        // browsers allow six connections to one server
+let active = 0
+let queue = []
+
+function paintTile(data, edge) {
+  const c = document.createElement('canvas')
+  c.width = c.height = edge
+  const g = c.getContext('2d')
+  const image = g.createImageData(edge, edge)
+  const px = image.data
+  const colors = app.world.colors
+  for (let i = 0, o = 0; i < data.length; i++, o += 4) {
+    const col = colors[data[i]] || [255, 0, 255]
+    const dimmed = highlight >= 0 && data[i] !== highlight
+    px[o] = dimmed ? col[0] * 0.25 + 20 : col[0]
+    px[o + 1] = dimmed ? col[1] * 0.25 + 20 : col[1]
+    px[o + 2] = dimmed ? col[2] * 0.25 + 22 : col[2]
+    px[o + 3] = 255
+  }
+  g.putImageData(image, 0, 0)
+  return c
+}
+
+function repaintAll() {
+  for (const t of tiles.values()) {
+    if (t.lowData) t.low = paintTile(t.lowData, LOW)
+    if (t.highData) t.high = paintTile(t.highData, TILE)
+  }
+  invalidate()
+}
+
+function requestTile(tile, quality) {
+  tile[quality + 'State'] = 'queued'
+  queue.push({ tile, quality })
+}
+
+function pump() {
+  if (queue.length === 0) return
+  // Previews first, then whatever is closest to the middle of the screen.
+  const dist = t => Math.hypot((t.tx + 0.5) * TILE * t.bpp - view.x, (t.tz + 0.5) * TILE * t.bpp - view.z) / t.bpp
+  queue.sort((a, b) => (a.quality === b.quality ? dist(a.tile) - dist(b.tile) : a.quality === 'low' ? -1 : 1))
+  while (active < MAX_ACTIVE && queue.length > 0) {
+    const { tile, quality } = queue.shift()
+    if (!tile.wanted) { tile[quality + 'State'] = undefined; continue }
+    active++
+    tile[quality + 'State'] = 'loading'
+    const controller = new AbortController()
+    tile[quality + 'Abort'] = controller
+    const generation = app.generation
+    api(`/api/tile?g=${generation}&seed=${encodeURIComponent(seed)}&bpp=${tile.bpp}&x=${tile.tx}&z=${tile.tz}&q=${quality}`, { signal: controller.signal })
+      .then(res => res.arrayBuffer())
+      .then(buffer => {
+        if (!tiles.has(tile.key) || tiles.get(tile.key) !== tile) return
+        const data = new Uint16Array(buffer)
+        tile[quality + 'Data'] = data
+        tile[quality] = paintTile(data, quality === 'low' ? LOW : TILE)
+        tile[quality + 'State'] = 'done'
+        invalidate()
+        scheduleLegend()
+      })
+      .catch(error => {
+        tile[quality + 'State'] = undefined
+        if (error.name !== 'AbortError' && error.status === 409) refreshState()
+        else if (error.name !== 'AbortError' && !error.message.includes('Failed to fetch')) toast(error.message)
+      })
+      .finally(() => { active--; invalidate() })
+  }
+}
+
+function clearTiles() {
+  for (const t of tiles.values()) { t.wanted = false; t.lowAbort?.abort(); t.highAbort?.abort() }
+  tiles = new Map()
+  queue = []
+  structures = { key: '', list: [], ids: structures.ids }
+  invalidate()
+}
+
+function visibleRange(bpp) {
+  const span = TILE * bpp
+  return {
+    x0: Math.floor(toBlockX(0) / span), x1: Math.floor(toBlockX(width) / span),
+    z0: Math.floor(toBlockZ(0) / span), z1: Math.floor(toBlockZ(height) / span),
+  }
+}
+
+function updateTiles() {
+  const bpp = bppForScale(view.scale)
+  const r = visibleRange(bpp)
+  const now = performance.now()
+  for (const t of tiles.values()) t.wanted = false
+  for (let tz = r.z0; tz <= r.z1; tz++) {
+    for (let tx = r.x0; tx <= r.x1; tx++) {
+      const key = `${bpp}|${tx}|${tz}`
+      let tile = tiles.get(key)
+      if (!tile) tiles.set(key, (tile = { key, bpp, tx, tz }))
+      tile.wanted = true
+      tile.used = now
+      if (!tile.low && !tile.high && !tile.lowState) requestTile(tile, 'low')
+      if (!tile.high && !tile.highState) requestTile(tile, 'high')
+    }
+  }
+  // Stop work on tiles that scrolled away, and forget old ones.
+  queue = queue.filter(job => job.tile.wanted || ((job.tile[job.quality + 'State'] = undefined), false))
+  for (const t of tiles.values()) {
+    if (t.wanted) continue
+    if (t.lowState === 'loading') t.lowAbort.abort()
+    if (t.highState === 'loading') t.highAbort.abort()
+  }
+  if (tiles.size > 500) {
+    const old = [...tiles.values()].filter(t => !t.wanted).sort((a, b) => a.used - b.used)
+    for (const t of old.slice(0, tiles.size - 350)) tiles.delete(t.key)
+  }
+  pump()
+}
+
+// ---- drawing -----------------------------------------------------------------------------
+function niceStep(raw) {
+  const power = 10 ** Math.floor(Math.log10(Math.max(raw, 1)))
+  const f = raw / power
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * power
+}
+
+function drawTile(t) {
+  const image = t.high || t.low
+  if (!image) return
+  const span = TILE * t.bpp
+  const left = Math.round(toScreenX(t.tx * span)), right = Math.round(toScreenX((t.tx + 1) * span))
+  const top = Math.round(toScreenZ(t.tz * span)), bottom = Math.round(toScreenZ((t.tz + 1) * span))
+  if (right < 0 || bottom < 0 || left > width || top > height) return
+  ctx.drawImage(image, left, top, right - left, bottom - top)
+}
+
+function label(text, x, y, align = 'left') {
+  ctx.textAlign = align
+  ctx.lineWidth = 3
+  ctx.strokeStyle = '#000c'
+  ctx.strokeText(text, x, y)
+  ctx.fillStyle = '#fff'
+  ctx.fillText(text, x, y)
+}
+
+function draw() {
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0)
+  ctx.fillStyle = '#0c0e12'
+  ctx.fillRect(0, 0, width, height)
+  ctx.imageSmoothingEnabled = false
+  if (!app) return
+
+  // Coarser tiles first, so anything already loaded shows through while the sharp tiles arrive.
+  const current = bppForScale(view.scale)
+  const all = [...tiles.values()].filter(t => t.low || t.high)
+  for (const t of all.filter(t => t.bpp !== current).sort((a, b) => b.bpp - a.bpp)) drawTile(t)
+  for (const t of all.filter(t => t.bpp === current)) drawTile(t)
+
+  ctx.font = '12px "Segoe UI", system-ui, sans-serif'
+  ctx.textBaseline = 'middle'
+  if ($('showGrid').checked) {
+    const step = niceStep(110 / view.scale)
+    ctx.lineWidth = 1
+    for (let x = Math.ceil(toBlockX(0) / step) * step; x <= toBlockX(width); x += step) {
+      const sx = Math.round(toScreenX(x)) + 0.5
+      ctx.lineWidth = 1
+      ctx.strokeStyle = x === 0 ? '#ffffffaa' : '#ffffff40'
+      ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, height); ctx.stroke()
+      label(String(x), sx + 4, 10)
+    }
+    for (let z = Math.ceil(toBlockZ(0) / step) * step; z <= toBlockZ(height); z += step) {
+      const sy = Math.round(toScreenZ(z)) + 0.5
+      ctx.lineWidth = 1
+      ctx.strokeStyle = z === 0 ? '#ffffffaa' : '#ffffff40'
+      ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(width, sy); ctx.stroke()
+      if (sy > 24) label(String(z), 4, sy - 9)
+    }
+  }
+
+  if ($('showStructures').checked) {
+    for (const s of shownStructures()) {
+      const sx = toScreenX(s.x), sy = toScreenZ(s.z)
+      if (sx < -8 || sy < -8 || sx > width + 8 || sy > height + 8) continue
+      markerPath(structShape(s.id), sx, sy)
+      ctx.fillStyle = structColor(s.id)
+      ctx.fill()
+      ctx.lineWidth = 1.5; ctx.strokeStyle = '#000'; ctx.stroke()
+    }
+  }
+
+  // Red ring at 0,0.
+  const ox = toScreenX(0), oz = toScreenZ(0)
+  if (ox > -20 && oz > -20 && ox < width + 20 && oz < height + 20) {
+    ctx.beginPath(); ctx.arc(ox, oz, 9, 0, Math.PI * 2)
+    ctx.lineWidth = 5; ctx.strokeStyle = '#fff'; ctx.stroke()
+    ctx.lineWidth = 2.5; ctx.strokeStyle = '#e60000'; ctx.stroke()
+  }
+
+  if (pin) {
+    const px = toScreenX(pin.x), pz = toScreenZ(pin.z)
+    ctx.beginPath(); ctx.moveTo(px, pz); ctx.lineTo(px - 7, pz - 16); ctx.arc(px, pz - 18, 7, Math.PI, 0); ctx.closePath()
+    ctx.fillStyle = '#ffcc00'; ctx.fill()
+    ctx.lineWidth = 1.5; ctx.strokeStyle = '#000'; ctx.stroke()
+    label(`${pin.x}, ${pin.z}`, px + 12, pz - 18)
+  }
+}
+
+function frame() {
+  if (dirty) {
+    dirty = false
+    updateTiles()
+    draw()
+    updateStatus()
+    const loading = [...tiles.values()].filter(t => t.wanted && !t.high).length
+    $('busy').style.display = loading > 0 ? 'block' : 'none'
+    $('busy').textContent = `Rendering ${loading} tile${loading === 1 ? '' : 's'}…`
+  }
+  requestAnimationFrame(frame)
+}
+
+// ---- status, legend ----------------------------------------------------------------------
+function biomeAt(x, z) {
+  for (const bpp of [bppForScale(view.scale), 4, 8, 16, 32, 64, 128, 256, 512]) {
+    const span = TILE * bpp
+    const tx = Math.floor(x / span), tz = Math.floor(z / span)
+    const t = tiles.get(`${bpp}|${tx}|${tz}`)
+    const data = t && (t.highData || t.lowData)
+    if (!data) continue
+    const edge = t.highData ? TILE : LOW
+    const px = Math.min(edge - 1, Math.floor(((x - tx * span) / span) * edge))
+    const pz = Math.min(edge - 1, Math.floor(((z - tz * span) / span) * edge))
+    return data[pz * edge + px]
+  }
+  return -1
+}
+
+function updateStatus() {
+  if (!app) return
+  const bpp = 1 / view.scale
+  const zoom = bpp >= 1 ? `1 px = ${fmt(bpp)} block${bpp === 1 ? '' : 's'}` : `1 block = ${fmt(view.scale)} px`
+  let html = ''
+  if (mouse) {
+    const x = Math.floor(toBlockX(mouse.x)), z = Math.floor(toBlockZ(mouse.y))
+    const b = biomeAt(x, z)
+    html += `<b>X ${x}</b> &nbsp;<b>Z ${z}</b><span class="sep">|</span>${b >= 0 ? app.world.names[b] : '…'}`
+    html += `<span class="sep">|</span>chunk ${x >> 4}, ${z >> 4}`
+    if (pin) html += `<span class="sep">|</span>${fmt(Math.hypot(x - pin.x, z - pin.z))} from pin`
+    const near = $('showStructures').checked && shownStructures().find(s => Math.hypot(toScreenX(s.x) - mouse.x, toScreenZ(s.z) - mouse.y) < 9)
+    if (near) html += `<span class="sep">|</span><b>${near.id.replace(/^minecraft:/, '')}</b> at ${near.x}, ${near.z}`
+    html += '<span class="sep">|</span>'
+  }
+  $('status').innerHTML = html + zoom
+}
+
+let legendTimer = 0
+function scheduleLegend() {
+  clearTimeout(legendTimer)
+  legendTimer = setTimeout(updateLegend, 250)
+}
+
+function updateLegend() {
+  if (!app) return
+  const counts = new Map()
+  let total = 0
+  const cols = 160, rows = Math.max(1, Math.round(cols * height / Math.max(1, width)))
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const b = biomeAt(toBlockX((i + 0.5) * width / cols), toBlockZ((j + 0.5) * height / rows))
+      if (b < 0) continue
+      counts.set(b, (counts.get(b) || 0) + 1)
+      total++
+    }
+  }
+  const list = $('legend')
+  list.textContent = ''
+  let water = 0
+  for (const [b, n] of [...counts].sort((a, c) => c[1] - a[1])) {
+    if (app.world.water[b]) water += n
+    const li = document.createElement('li')
+    if (b === highlight) li.className = 'on'
+    const pct = n / total * 100
+    const swatch = document.createElement('i')
+    swatch.style.background = `rgb(${app.world.colors[b].join(',')})`
+    const name = document.createElement('span')
+    name.textContent = app.world.names[b]
+    name.title = app.world.biomes[b]
+    const share = document.createElement('b')
+    share.textContent = pct < 0.05 ? '<0.1%' : pct.toFixed(pct >= 10 ? 0 : 1) + '%'
+    li.append(swatch, name, share)
+    li.onclick = () => { highlight = highlight === b ? -1 : b; repaintAll(); updateLegend() }
+    list.append(li)
+  }
+  $('summary').textContent = total ? `Ocean ${(water / total * 100).toFixed(1)}%, land ${(100 - water / total * 100).toFixed(1)}%` : ''
+}
+
+// ---- structures --------------------------------------------------------------------------
+let structTimer = 0
+function scheduleStructures() {
+  clearTimeout(structTimer)
+  structTimer = setTimeout(loadStructures, 300)
+}
+const STRUCT_NOTE = 'These are candidates: placement and biome are checked like the game does, but the game can still reject a few.'
+const hiddenTypes = new Set()   // structure ids switched off in the panel
+const structIndex = id => Math.max(0, structures.ids.indexOf(id))
+const structColor = id => STRUCT_COLORS[structIndex(id) % STRUCT_COLORS.length]
+// Twelve colours are not enough for every type, so the shape changes when the colours repeat.
+const structShape = id => ['diamond', 'square', 'circle'][Math.floor(structIndex(id) / STRUCT_COLORS.length) % 3]
+function styleMark(el, id) {
+  const shape = structShape(id)
+  el.style.background = structColor(id)
+  el.style.borderRadius = shape === 'circle' ? '50%' : '2px'
+  el.style.transform = shape === 'diamond' ? 'rotate(45deg) scale(.75)' : 'scale(.85)'
+}
+function markerPath(shape, sx, sy) {
+  ctx.beginPath()
+  if (shape === 'square') ctx.rect(sx - 5, sy - 5, 10, 10)
+  else if (shape === 'circle') ctx.arc(sx, sy, 5.5, 0, Math.PI * 2)
+  else { ctx.moveTo(sx, sy - 6); ctx.lineTo(sx + 6, sy); ctx.lineTo(sx, sy + 6); ctx.lineTo(sx - 6, sy); ctx.closePath() }
+}
+const structName = id => id.replace(/^minecraft:/, '')
+const shownStructures = () => structures.list.filter(s => !hiddenTypes.has(s.id))
+
+function renderStructPanel() {
+  const on = $('showStructures').checked
+  const present = [...new Set(structures.list.map(s => s.id))].sort()
+  $('structTypesSection').hidden = !on || present.length === 0
+  $('structNearSection').hidden = !on || present.length === 0
+
+  const types = $('structLegend')
+  types.textContent = ''
+  for (const id of present) {
+    const li = document.createElement('li')
+    if (hiddenTypes.has(id)) li.className = 'off'
+    const label = document.createElement('label')
+    const box = document.createElement('input')
+    box.type = 'checkbox'
+    box.checked = !hiddenTypes.has(id)
+    box.onchange = () => { box.checked ? hiddenTypes.delete(id) : hiddenTypes.add(id); renderStructPanel(); invalidate() }
+    const mark = document.createElement('i')
+    styleMark(mark, id)
+    const name = document.createElement('span')
+    name.textContent = structName(id)
+    name.title = id
+    label.append(box, mark, name)
+    const count = document.createElement('b')
+    count.textContent = '×' + structures.list.filter(s => s.id === id).length
+    li.append(label, count)
+    types.append(li)
+  }
+
+  const near = $('structNear')
+  near.textContent = ''
+  const cx = Math.round(view.x), cz = Math.round(view.z)
+  const sorted = shownStructures().map(s => ({ ...s, d: Math.hypot(s.x - cx, s.z - cz) })).sort((a, b) => a.d - b.d).slice(0, 40)
+  for (const s of sorted) {
+    const li = document.createElement('li')
+    li.title = `${s.id} at ${s.x}, ${s.z}`
+    const mark = document.createElement('i')
+    styleMark(mark, s.id)
+    const name = document.createElement('span')
+    name.textContent = structName(s.id)
+    const where = document.createElement('b')
+    where.textContent = `${s.x}, ${s.z}`
+    li.append(mark, name, where)
+    li.onclick = () => { setPin(s.x, s.z); goTo(s.x, s.z) }
+    near.append(li)
+  }
+  if (on && present.length > 0 && sorted.length === 0) {
+    const li = document.createElement('li')
+    li.style.cursor = 'default'
+    li.textContent = 'Every type is switched off.'
+    near.append(li)
+  }
+}
+
+async function loadStructures() {
+  const note = $('structNote')
+  note.className = 'note'
+  if (!app || !$('showStructures').checked) {
+    note.textContent = STRUCT_NOTE
+    return renderStructPanel()
+  }
+  const pad = 64
+  const b = { minX: Math.floor(toBlockX(0)) - pad, maxX: Math.ceil(toBlockX(width)) + pad, minZ: Math.floor(toBlockZ(0)) - pad, maxZ: Math.ceil(toBlockZ(height)) + pad }
+  if ((b.maxX - b.minX) * (b.maxZ - b.minZ) > 40000 * 40000) {
+    structures.list = []
+    structures.key = ''
+    note.textContent = 'Zoom in to see structures: this view is too large.'
+    renderStructPanel()
+    return invalidate()
+  }
+  const key = `${app.generation}|${seed}|${b.minX}|${b.maxX}|${b.minZ}|${b.maxZ}`
+  if (key === structures.key) return
+  try {
+    const res = await api(`/api/structures?g=${app.generation}&seed=${encodeURIComponent(seed)}&minX=${b.minX}&maxX=${b.maxX}&minZ=${b.minZ}&maxZ=${b.maxZ}`)
+    const body = await res.json()
+    // Colours follow the dimension's full type list, so a type keeps its colour as you move.
+    structures = { key, list: body.candidates, ids: body.types }
+    const skipped = body.skipped.length ? ` Not shown: ${body.skipped.map(s => structName(s.set)).join(', ')}.` : ''
+    note.textContent = (body.types.length === 0 ? 'No structures can generate in this dimension.' : body.candidates.length === 0 ? 'None in view.' : STRUCT_NOTE) + skipped
+    renderStructPanel()
+    invalidate()
+  } catch (error) {
+    if (error.status === 409) return refreshState()
+    note.className = 'note error'
+    note.textContent = error.message
+  }
+}
+
+// The panel remembers whether it was open.
+function setStructPanel(open) {
+  $('structPanel').classList.toggle('collapsed', !open)
+  const button = $('structToggle')
+  button.textContent = open ? '»' : '«'
+  button.title = open ? 'Hide this panel' : 'Show the structures panel'
+  button.setAttribute('aria-expanded', String(open))
+  try { localStorage.setItem('structPanel', open ? 'open' : 'closed') } catch {}
+}
+$('structToggle').onclick = () => setStructPanel($('structPanel').classList.contains('collapsed'))
+$('structTitle').onclick = () => { if ($('structPanel').classList.contains('collapsed')) setStructPanel(true) }
+$('structAll').onclick = () => { hiddenTypes.clear(); renderStructPanel(); invalidate() }
+$('structNone').onclick = () => { for (const s of structures.list) hiddenTypes.add(s.id); renderStructPanel(); invalidate() }
+{
+  let saved = null
+  try { saved = localStorage.getItem('structPanel') } catch {}
+  setStructPanel(saved ? saved === 'open' : window.innerWidth >= 1100)
+}
+
+// ---- view changes ------------------------------------------------------------------------
+let hashTimer = 0
+function viewChanged() {
+  invalidate()
+  scheduleLegend()
+  scheduleStructures()
+  clearTimeout(hashTimer)
+  hashTimer = setTimeout(() => {
+    history.replaceState(null, '', `#seed=${encodeURIComponent(seed)}&x=${Math.round(view.x)}&z=${Math.round(view.z)}&zoom=${Math.round(Math.log2(view.scale))}${$('showStructures').checked ? '&structures=1' : ''}`)
+  }, 300)
+}
+function zoomAt(sx, sy, factor) {
+  const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, view.scale * factor))
+  if (scale === view.scale) return
+  const bx = toBlockX(sx), bz = toBlockZ(sy)
+  view.scale = scale
+  view.x = bx - (sx - width / 2) / scale
+  view.z = bz - (sy - height / 2) / scale
+  viewChanged()
+}
+function goTo(x, z) {
+  view.x = x; view.z = z
+  viewChanged()
+}
+
+function resize() {
+  const rect = canvas.getBoundingClientRect()
+  width = rect.width; height = rect.height
+  canvas.width = Math.round(width * devicePixelRatio)
+  canvas.height = Math.round(height * devicePixelRatio)
+  viewChanged()
+}
+new ResizeObserver(resize).observe(canvas)
+
+// Pointer: drag to pan, pinch to zoom, click to pin.
+const pointers = new Map()
+let dragMoved = 0
+let pinchStart = 0
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId)
+  pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY })
+  dragMoved = 0
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchStart = Math.hypot(a.x - b.x, a.y - b.y) }
+  canvas.classList.add('dragging')
+})
+canvas.addEventListener('pointermove', e => {
+  mouse = { x: e.offsetX, y: e.offsetY }
+  const p = pointers.get(e.pointerId)
+  if (!p) return updateStatus()
+  const dx = e.offsetX - p.x, dy = e.offsetY - p.y
+  p.x = e.offsetX; p.y = e.offsetY
+  if (pointers.size === 1) {
+    dragMoved += Math.abs(dx) + Math.abs(dy)
+    view.x -= dx / view.scale
+    view.z -= dy / view.scale
+    viewChanged()
+  } else if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()]
+    const d = Math.hypot(a.x - b.x, a.y - b.y)
+    dragMoved = 99
+    if (pinchStart > 0 && (d > pinchStart * 1.6 || d < pinchStart / 1.6)) {
+      zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, d > pinchStart ? 2 : 0.5)
+      pinchStart = d
+    }
+  }
+})
+const endPointer = e => {
+  if (pointers.has(e.pointerId) && pointers.size === 1 && dragMoved < 4 && e.type === 'pointerup') {
+    setPin(Math.floor(toBlockX(e.offsetX)), Math.floor(toBlockZ(e.offsetY)))
+  }
+  pointers.delete(e.pointerId)
+  if (pointers.size === 0) canvas.classList.remove('dragging')
+}
+canvas.addEventListener('pointerup', endPointer)
+canvas.addEventListener('pointercancel', endPointer)
+canvas.addEventListener('pointerleave', () => { mouse = null; updateStatus() })
+
+let wheelSum = 0
+canvas.addEventListener('wheel', e => {
+  e.preventDefault()
+  // Mouse wheels send big steps, touchpads many small ones: add them up to one zoom step.
+  wheelSum += e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY
+  if (Math.abs(wheelSum) >= 80) {
+    zoomAt(e.offsetX, e.offsetY, wheelSum < 0 ? 2 : 0.5)
+    wheelSum = 0
+  }
+}, { passive: false })
+canvas.addEventListener('dblclick', e => zoomAt(e.offsetX, e.offsetY, 2))
+
+window.addEventListener('keydown', e => {
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName)) return
+  const step = 120 / view.scale
+  if (e.key === 'ArrowLeft') goTo(view.x - step, view.z)
+  else if (e.key === 'ArrowRight') goTo(view.x + step, view.z)
+  else if (e.key === 'ArrowUp') goTo(view.x, view.z - step)
+  else if (e.key === 'ArrowDown') goTo(view.x, view.z + step)
+  else if (e.key === '+' || e.key === '=') zoomAt(width / 2, height / 2, 2)
+  else if (e.key === '-' || e.key === '_') zoomAt(width / 2, height / 2, 0.5)
+  else return
+  e.preventDefault()
+})
+
+$('zoomIn').onclick = () => zoomAt(width / 2, height / 2, 2)
+$('zoomOut').onclick = () => zoomAt(width / 2, height / 2, 0.5)
+$('home').onclick = () => goTo(0, 0)
+$('toggle').onclick = () => $('side').classList.toggle('open')
+$('showGrid').onchange = invalidate
+$('showStructures').onchange = () => { structures.key = ''; loadStructures(); viewChanged() }
+$('save').onclick = () => {
+  canvas.toBlob(blob => {
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `seedtester_${app.world.dimension.replace(/[^a-z0-9]+/gi, '_')}_seed_${seed}.png`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000)
+  })
+}
+
+// ---- pin, go to, find --------------------------------------------------------------------
+function setPin(x, z) {
+  pin = { x, z }
+  const b = biomeAt(x, z)
+  const note = $('pinNote')
+  note.textContent = `Pin: ${x}, ${z}${b >= 0 ? ' — ' + app.world.names[b] : ''}  `
+  const copy = document.createElement('button')
+  copy.textContent = 'Copy /tp'
+  copy.onclick = () => navigator.clipboard?.writeText(`/tp @s ${x} ~ ${z}`).then(() => { copy.textContent = 'Copied' })
+  const clear = document.createElement('button')
+  clear.textContent = 'Remove'
+  clear.style.marginLeft = '6px'
+  clear.onclick = () => { pin = null; note.textContent = 'Click the map to drop a pin.'; invalidate() }
+  note.append(copy, clear)
+  invalidate()
+}
+$('gotoForm').onsubmit = e => {
+  e.preventDefault()
+  const x = Number($('gotoX').value || 0), z = Number($('gotoZ').value || 0)
+  if (Number.isFinite(x) && Number.isFinite(z)) goTo(x, z)
+}
+$('findBtn').onclick = async () => {
+  const biome = $('findBiome').value
+  if (!biome) return
+  const note = $('findNote')
+  note.className = 'note'
+  note.textContent = 'Searching…'
+  $('findBtn').disabled = true
+  try {
+    const res = await api(`/api/locate?g=${app.generation}&seed=${encodeURIComponent(seed)}&biome=${encodeURIComponent(biome)}&x=${Math.round(view.x)}&z=${Math.round(view.z)}`)
+    const { found, from } = await res.json()
+    if (!found) {
+      note.textContent = `No ${biome} within 6400 blocks of ${from[0]}, ${from[2]}.`
+    } else {
+      note.textContent = `Nearest ${biome.replace(/^minecraft:/, '')}: ${found.x}, ${found.z} (${found.distance} blocks from ${from[0]}, ${from[2]}).`
+      setPin(found.x, found.z)
+      goTo(found.x, found.z)
+    }
+  } catch (error) {
+    note.className = 'note error'
+    note.textContent = error.message
+  }
+  $('findBtn').disabled = false
+}
+
+// ---- seed --------------------------------------------------------------------------------
+async function setSeed(text) {
+  try {
+    const { seed: resolved } = await (await api('/api/seed?text=' + encodeURIComponent(text))).json()
+    const typed = String(text).trim()
+    seed = resolved
+    $('seedInput').value = typed === '' || typed.toLowerCase() === 'random' ? resolved : typed
+    $('seedNote').className = 'note'
+    $('seedNote').textContent = typed !== resolved && typed !== '' && typed.toLowerCase() !== 'random'
+      ? `Text seed "${typed}" is ${resolved} in Minecraft.` : `Showing seed ${resolved}.`
+    clearTiles()
+    viewChanged()
+  } catch (error) {
+    $('seedNote').className = 'note error'
+    $('seedNote').textContent = error.message
+  }
+}
+$('seedForm').onsubmit = e => { e.preventDefault(); setSeed($('seedInput').value) }
+$('randomSeed').onclick = () => setSeed('random')
+
+// ---- datapacks and dimension -------------------------------------------------------------
+let selected = []       // pack file names, in load order
+const PACK_HINT = 'Tick the packs to use. Order matters: lower packs override higher ones, like on your server. You can also drop a .zip onto the map.'
+function renderPacks() {
+  const list = $('packs')
+  list.textContent = ''
+  const world = app.worldInfo
+  $('addRow').hidden = !!world
+  $('packHint').textContent = world ? 'These are the packs this world has enabled, in the world\'s own order. Close the world to choose packs yourself.' : PACK_HINT
+  if (world) {
+    // A world decides its own packs; they are shown but cannot be changed here.
+    const rows = world.packs.map(name => ({ name, off: false }))
+    if (rows.length === 0) rows.push({ name: 'No datapacks in this world (vanilla only).', off: true })
+    for (const skip of world.skipped) rows.push({ name: `${skip.pack} — not loaded`, off: true, title: skip.reason })
+    for (const row of rows) {
+      const li = document.createElement('li')
+      if (row.off) li.className = 'off'
+      const text = document.createElement('span')
+      text.textContent = row.name
+      text.title = row.title || row.name
+      li.append(text)
+      list.append(li)
+    }
+    return
+  }
+  const others = app.available.filter(n => !selected.includes(n))
+  if (app.available.length === 0) {
+    const li = document.createElement('li')
+    li.className = 'off'
+    li.innerHTML = '<span>No datapacks yet (vanilla only).</span>'
+    list.append(li)
+  }
+  for (const name of [...selected, ...others]) {
+    const on = selected.includes(name)
+    const li = document.createElement('li')
+    if (!on) li.className = 'off'
+    const box = document.createElement('input')
+    box.type = 'checkbox'
+    box.checked = on
+    box.id = 'pack_' + name
+    box.onchange = () => { selected = box.checked ? [...selected, name] : selected.filter(n => n !== name); packsChanged() }
+    const text = document.createElement('span')
+    text.textContent = name
+    text.title = name
+    li.append(box, text)
+    if (on && selected.length > 1) {
+      const i = selected.indexOf(name)
+      for (const [symbol, delta, title] of [['▲', -1, 'Load earlier'], ['▼', 1, 'Load later']]) {
+        const move = document.createElement('button')
+        move.textContent = symbol
+        move.title = title
+        move.disabled = i + delta < 0 || i + delta >= selected.length
+        move.onclick = () => { selected.splice(i, 1); selected.splice(i + delta, 0, name); packsChanged() }
+        li.append(move)
+      }
+    }
+    list.append(li)
+  }
+}
+function fillDimensions(dimensions, preferred) {
+  const select = $('dimension')
+  select.textContent = ''
+  for (const id of dimensions) select.add(new Option(id, id))
+  const pick = dimensions.includes(preferred) ? preferred : dimensions.includes('minecraft:overworld') ? 'minecraft:overworld' : dimensions[0]
+  select.value = pick
+}
+async function packsChanged() {
+  renderPacks()
+  const note = $('worldNote')
+  try {
+    const query = selected.map(n => 'pack=' + encodeURIComponent(n)).join('&')
+    const { dimensions } = await (await api('/api/dimensions?' + query)).json()
+    fillDimensions(dimensions, $('dimension').value)
+    note.className = 'note'
+    note.textContent = 'Press "Load selected dimension" to apply.'
+  } catch (error) {
+    note.className = 'note error'
+    note.textContent = error.message
+  }
+}
+function applyState(state) {
+  app = state
+  selected = [...state.selected]
+  renderPacks()
+  fillDimensions(state.dimensions, state.world.dimension)
+  const w = state.world
+  $('worldLine').textContent = `${w.dimension} · ${w.biomes.length} biomes · Y ${w.minY} to ${w.minY + w.height - 1}`
+  renderWorldNote()
+  const find = $('findBiome')
+  find.textContent = ''
+  w.biomes.forEach((id, i) => find.add(new Option(w.names[i], id)))
+  highlight = -1
+  structures = { key: '', list: [], ids: [] }
+  hiddenTypes.clear()
+  renderStructPanel()
+  clearTiles()
+  viewChanged()
+}
+function renderWorldNote() {
+  const info = app.worldInfo
+  $('closeWorld').hidden = !info
+  const openNote = $('openNote')
+  openNote.className = 'note'
+  if (info) {
+    const skipped = info.skipped.length ? ` ${info.skipped.length} pack entr${info.skipped.length === 1 ? 'y' : 'ies'} could not be loaded (see Datapacks).` : ''
+    openNote.textContent = `"${info.name}" · Minecraft ${info.version} · seed ${info.seed} · ${info.packs.length} datapack${info.packs.length === 1 ? '' : 's'}.${skipped}${info.versionNote ? ' ' + info.versionNote : ''}`
+    openNote.title = info.folder
+  } else {
+    openNote.textContent = 'Pick a Minecraft world folder to use its seed, datapacks and dimensions.'
+    openNote.title = ''
+  }
+}
+async function refreshState() {
+  applyState(await (await api('/api/state')).json())
+}
+$('openWorld').onclick = async () => {
+  const note = $('openNote')
+  const button = $('openWorld')
+  button.disabled = true
+  note.className = 'note'
+  note.textContent = 'A folder window has opened. Select the world folder (the one that contains level.dat). If you cannot see the window, check the taskbar.'
+  try {
+    const state = await (await api('/api/open-world', { method: 'POST' })).json()
+    if (state.cancelled) {
+      renderWorldNote()
+    } else {
+      applyState(state)
+      $('worldNote').textContent = ''
+      await setSeed(state.worldInfo.seed)
+      goTo(0, 0)
+    }
+  } catch (error) {
+    note.className = 'note error'
+    note.textContent = error.message
+  }
+  button.disabled = false
+}
+
+$('closeWorld').onclick = async () => {
+  try {
+    applyState(await (await api('/api/load', { method: 'POST', body: JSON.stringify({ datapacks: [], dimension: 'minecraft:overworld' }) })).json())
+    $('worldNote').className = 'note'
+    $('worldNote').textContent = 'World closed. Showing vanilla; tick datapacks to use your own.'
+  } catch (error) {
+    toast(error.message)
+  }
+}
+$('loadDimension').onclick = async () => {
+  const note = $('worldNote')
+  const button = $('loadDimension')
+  button.disabled = true
+  note.className = 'note'
+  note.textContent = 'Loading…'
+  try {
+    const body = app.worldInfo ? { useWorld: true, dimension: $('dimension').value } : { datapacks: selected, dimension: $('dimension').value }
+    const res = await api('/api/load', { method: 'POST', body: JSON.stringify(body) })
+    applyState(await res.json())
+    note.className = 'note ok'
+    note.textContent = `Loaded ${app.world.dimension}.`
+  } catch (error) {
+    note.className = 'note error'
+    note.textContent = error.message
+  }
+  button.disabled = false
+}
+async function uploadPacks(files) {
+  const note = $('worldNote')
+  if (app.worldInfo) {
+    note.className = 'note error'
+    note.textContent = 'A world is open and uses its own datapacks. Press Close next to "Load world…" first.'
+    return
+  }
+  for (const file of files) {
+    note.className = 'note'
+    note.textContent = `Adding ${file.name}…`
+    try {
+      const { name, available } = await (await api('/api/upload?name=' + encodeURIComponent(file.name), { method: 'POST', body: file })).json()
+      app.available = available
+      if (!selected.includes(name)) selected.push(name)
+    } catch (error) {
+      note.className = 'note error'
+      note.textContent = `${file.name}: ${error.message}`
+      renderPacks()
+      return
+    }
+  }
+  await packsChanged()
+}
+$('addPack').onclick = () => $('packFile').click()
+$('packFile').onchange = e => { uploadPacks([...e.target.files]); e.target.value = '' }
+let dragDepth = 0
+window.addEventListener('dragenter', e => { if (e.dataTransfer?.types.includes('Files')) { dragDepth++; $('drop').style.display = 'flex' } })
+window.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('drop').style.display = 'none' } })
+window.addEventListener('dragover', e => e.preventDefault())
+window.addEventListener('drop', e => {
+  e.preventDefault()
+  dragDepth = 0
+  $('drop').style.display = 'none'
+  if (e.dataTransfer?.files.length) uploadPacks([...e.dataTransfer.files])
+})
+
+// ---- start -------------------------------------------------------------------------------
+async function start() {
+  const state = await (await api('/api/state')).json()
+  const hash = new URLSearchParams(location.hash.slice(1))
+  if (hash.has('x')) view.x = Number(hash.get('x')) || 0
+  if (hash.has('z')) view.z = Number(hash.get('z')) || 0
+  if (hash.has('zoom')) view.scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, 2 ** (Number(hash.get('zoom')) || -3)))
+  $('showStructures').checked = hash.get('structures') === '1'
+  applyState(state)
+  if (state.startupError) toast(`Could not load the world from config.json: ${state.startupError}`)
+  await setSeed(hash.get('seed') ?? state.worldInfo?.seed ?? state.defaultSeed)
+  requestAnimationFrame(frame)
+}
+start().catch(error => {
+  $('worldLine').textContent = 'Could not reach Seed Tester. Is the black window still open?'
+  toast(error.message)
+})
+</script>
+</body>
+</html>

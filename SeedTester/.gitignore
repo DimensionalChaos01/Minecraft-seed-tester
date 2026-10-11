@@ -1,0 +1,9 @@
+# Downloaded libraries (restored by "npm install" / the .bat files)
+node_modules/
+
+# Results
+output/
+
+# People's own datapacks: never publish someone's pack by accident
+datapacks/*
+!datapacks/.gitkeep

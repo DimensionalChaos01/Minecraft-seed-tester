@@ -1,0 +1,13 @@
+{
+  "mode": "locate",
+  "datapacks": ["../datapacks/delta_v1.zip"],
+  "dimension": "delta:delta_primary",
+  "seed": 0,
+
+  "locate": {
+    "biome": "all",
+    "from": [0, 64, 0]
+  },
+
+  "outputFolder": "../output"
+}

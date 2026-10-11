@@ -1,0 +1,20 @@
+{
+  "mode": "search",
+  "datapacks": ["../datapacks/delta_v1.zip"],
+  "dimension": "delta:delta_primary",
+
+  "search": {
+    "seeds": { "from": 0, "count": 300 },
+    "size": 16000,
+    "blocksPerPixel": 64,
+    "top": 10,
+    "rules": [
+      { "type": "land_at", "x": 0, "z": 0, "weight": 10, "required": true },
+      { "type": "continent", "minAreaKm2": 20, "withinBlocks": 2000, "weight": 10 },
+      { "type": "ocean_percent", "min": 40, "max": 75, "weight": 5 },
+      { "type": "biomes_within", "biomes": ["plains", "forest", "jungle"], "withinBlocks": 4000, "weight": 5 }
+    ]
+  },
+
+  "outputFolder": "../output"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "seed-tester",
+  "version": "1.0.0",
+  "description": "Biome map renderer and seed searcher for custom Minecraft 1.20.1 datapack dimensions",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "seedtester": "src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js config.json",
+    "selftest": "node src/cli.js selftest"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "adm-zip": "0.5.16",
+    "deepslate": "0.20.0"
+  }
+}
